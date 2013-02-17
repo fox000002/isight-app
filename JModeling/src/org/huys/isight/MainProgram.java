@@ -6,9 +6,9 @@ public class MainProgram {
 
         String[] params = {"mycase.zmf"};
 
-        ModelExecution.run(params);
+        //ModelExecution.run(params);
 
-        //Modelling.run(params);
+        Modelling.run(params);
     }
 
 }

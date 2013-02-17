@@ -1,9 +1,6 @@
 package org.huys.isight;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -13,19 +10,16 @@ import com.engineous.sdk.component.ComponentAPI;
 import com.engineous.sdk.designdriver.DesignDriverFactory;
 import com.engineous.sdk.designdriver.parameters.DesignVariable;
 import com.engineous.sdk.designdriver.parameters.Objective;
+import com.engineous.sdk.designdriver.parameters.OutputConstraint;
 import com.engineous.sdk.designdriver.plan.OptimizationPlan;
 import com.engineous.sdk.log.Log;
 import com.engineous.sdk.log.SysLog;
 import com.engineous.sdk.metamodel.MetaModel;
 import com.engineous.sdk.metamodel.MetaModelManager;
-import com.engineous.sdk.model.DtComponent;
-import com.engineous.sdk.model.DtControlFlow;
-import com.engineous.sdk.model.DtModelManager;
-import com.engineous.sdk.model.DtScalarVariable;
-import com.engineous.sdk.model.DtUtils;
-import com.engineous.sdk.model.DtVariable;
+import com.engineous.sdk.model.*;
 import com.engineous.sdk.server.Logon;
 import com.engineous.sdk.vars.EsiTypes;
+import com.engineous.sdk.vars.Value;
 import com.engineous.sdk.vars.Variable;
 
 /**
@@ -136,6 +130,24 @@ public class Modelling {
         Runtime.getRuntime().exec(rtArgs);
     }
 
+    private static DtScalarVariable AddInputParameterReal(String varName)
+            throws Exception {
+        return DtModelManager.createScalarVariable(varName, EsiTypes.REAL, Variable.ROLE_PARAMETER,
+                Variable.MODE_INPUT, null, null);
+    }
+
+    private static DtScalarVariable AddOutputParameterReal(String varName)
+            throws Exception {
+        return DtModelManager.createScalarVariable(varName, EsiTypes.REAL, Variable.ROLE_PARAMETER,
+                Variable.MODE_OUTPUT, null, null);
+    }
+
+    private static DtScalarVariable AddInputOutputParameterReal(String varName)
+            throws Exception {
+        return DtModelManager.createScalarVariable(varName, EsiTypes.REAL, Variable.ROLE_PARAMETER,
+                Variable.MODE_INOUT, null, null);
+    }
+
     //=========================================================================
 
     /**
@@ -154,7 +166,6 @@ public class Modelling {
         DtComponent myTask = DtModelManager.createComponent(rootMM, "MySimcodeOptimization");
         mgr.setRootComponent(myTask);
 
-        // Now add a calculator to the task
         MetaModel cmdMM = MetaModelManager.instance().lookupMetaModel("com.engineous.component.OSCommand");
         DtComponent cmd = DtModelManager.createComponent(cmdMM, "My Cmd");
         myTask.addComponent(cmd);
@@ -166,79 +177,246 @@ public class Modelling {
         DtComponent out = DtModelManager.createComponent(datexMM, "My Output");
         myTask.addComponent(out);
 
+        // Now add a calculator to the task
+        MetaModel calcMM = MetaModelManager.instance().lookupMetaModel("com.engineous.component.Calculator");
+        DtComponent calc = DtModelManager.createComponent(calcMM, "My Calc");
+        myTask.addComponent(calc);
+
         //
         DtControlFlow cf1 = DtModelManager.createControlFlow(null, in);
         DtControlFlow cf2 = DtModelManager.createControlFlow(in, cmd);
         DtControlFlow cf3 = DtModelManager.createControlFlow(cmd, out);
-        DtControlFlow cf4 = DtModelManager.createControlFlow(out, null);
+        DtControlFlow cf4 = DtModelManager.createControlFlow(out, calc);
+        DtControlFlow cf5 = DtModelManager.createControlFlow(calc, null);
 
         myTask.addControlFlow(cf1);
         myTask.addControlFlow(cf2);
         myTask.addControlFlow(cf3);
         myTask.addControlFlow(cf4);
+        myTask.addControlFlow(cf5);
 
         //
-        DtScalarVariable var = DtModelManager.createScalarVariable("x", EsiTypes.REAL, Variable.ROLE_PARAMETER,
-                Variable.MODE_INPUT, null, null);
-
-        var.getValueObj().setValue(100);
-        cmd.addParameter(var);
-
-        DtUtils.copyParameters(cmd, myTask);
-        DtUtils.copyParameters(cmd, in);
-        DtUtils.copyParameters(cmd, out);
-
-
-        DtScalarVariable var2 = DtModelManager.createScalarVariable("y", EsiTypes.REAL, Variable.ROLE_PARAMETER,
+        DtScalarVariable var = DtModelManager.createScalarVariable("k", EsiTypes.REAL, Variable.ROLE_PARAMETER,
                 Variable.MODE_OUTPUT, null, null);
 
-        cmd.addParameter(var2);
+        //var.getValueObj().setValue(100);
+        calc.addParameter(var);
 
-        DtScalarVariable varStr = DtModelManager.createScalarVariable("sample_Tmpl", EsiTypes.STRING, Variable.ROLE_PARAMETER,
-                Variable.MODE_INPUT, null, null);
-        in.addParameter(varStr);
+        DtUtils.copyParameters(calc, myTask);
+        //DtUtils.copyParameters(calc, in);
+        //DtUtils.copyParameters(calc, out);
 
-        DtScalarVariable varStr2 = DtModelManager.createScalarVariable("output_dat", EsiTypes.STRING, Variable.ROLE_PARAMETER,
+
+        //DtScalarVariable var2 = DtModelManager.createScalarVariable("y", EsiTypes.REAL, Variable.ROLE_PARAMETER,
+       //         Variable.MODE_OUTPUT, null, null);
+        //calc.addParameter(var2);
+
+
+
+     //   DtScalarVariable varStr = DtModelManager.createScalarVariable("deform_d", EsiTypes.FILE, Variable.ROLE_PARAMETER,
+    //            Variable.MODE_OUTPUT, null, null);
+    //    varStr.getValueObj().setValue("{modeldir}\\deform.d");
+    //    in.addParameter(varStr);
+  /*
+        DtScalarVariable varStr2 = DtModelManager.createScalarVariable("afcharct_dat", EsiTypes.FILE, Variable.ROLE_PARAMETER,
                 Variable.MODE_INPUT, null, null);
+        varStr2.getValueObj().setValue("{modeldir}\\afcharct.dat");
         out.addParameter(varStr2);
 
-        //
-        OptimizationPlan optPlan = DesignDriverFactory.createOptPlan(myTask);
-        DesignVariable dv = optPlan.addDesignVariable("x");
-        Objective obj = optPlan.addObjective("y", Objective.MINIMIZE);
-        optPlan.store(myTask);
+        DtScalarVariable varStr3 = DtModelManager.createScalarVariable("beamthick", EsiTypes.FILE, Variable.ROLE_PARAMETER,
+                Variable.MODE_INPUT, null, null);
+        varStr3.getValueObj().setValue("{modeldir}\\beamthick");
+        out.addParameter(varStr3);
 
+        DtScalarVariable varStr4 = DtModelManager.createScalarVariable("Cl_polar_dat", EsiTypes.FILE, Variable.ROLE_PARAMETER,
+                Variable.MODE_INOUT, null, null);
+        varStr4.getValueObj().setValue("{modeldir}\\Cl_polar.dat");
+        out.addParameter(varStr4);
+*/
         //
         ComponentAPI cmdAPI = cmd.getAPI();
         cmdAPI.set("type", "Command");
-        cmdAPI.set("Command", "/path/to/cmd");
-        cmdAPI.set("commandargs", "args");
+        cmdAPI.set("Command", "E:\\Working\\isight-app\\JModeling\\run_Xfoil.bat");
+        //cmdAPI.set("workingdir", "E:\\Working\\isight-app\\JModeling");
+        //DtScalarVariable dtvar = (DtScalarVariable)cmd.getProperty("workingdir");
+        //Value v = dtvar.getValueObj();
+        //v.setValue("E:\\Working\\isight-app\\JModeling");
+        //ModelProperties mp = ModelProperties.getModelProperties(cmd);
+      //  System.out.println(mp.getModelRunDir());
+       // mp.setModelRunDir("E:\\Working\\isight-app\\JModeling");
+        //System.out.println(mp.getModelRunDir());
+       // DtScalarVariable dtvar = (DtScalarVariable)cmd.getProperty( DtComponent.PROPERTY_WORKING_DIR);
+       // dtvar.getValueObj().setValue("E:\\Working\\isight-app\\JModeling");
+
+        //cmd.PROPERTY_WORKING_DIR = "E:\\Working\\isight-app\\JModeling";
+
         cmdAPI.apply();
 
         //
+        DtScalarVariable v_down01 = AddInputParameterReal("v_down01");
+        in.addParameter(v_down01);
+
+        DtScalarVariable v_down02 = AddInputParameterReal("v_down02");
+        in.addParameter(v_down02);
+
+        DtScalarVariable v_down03 = AddInputParameterReal("v_down03");
+        in.addParameter(v_down03);
+
+        DtScalarVariable v_down04 = AddInputParameterReal("v_down04");
+        in.addParameter(v_down04);
+
+        DtScalarVariable v_down05 = AddInputParameterReal("v_down05");
+        in.addParameter(v_down05);
+
+        DtScalarVariable v_up01 = AddInputParameterReal("v_up01");
+        in.addParameter(v_up01);
+
+        DtScalarVariable v_up02 = AddInputParameterReal("v_up02");
+        in.addParameter(v_up02);
+
+        DtScalarVariable v_up03 = AddInputParameterReal("v_up03");
+        in.addParameter(v_up03);
+
+        DtScalarVariable v_up04 = AddInputParameterReal("v_up04");
+        in.addParameter(v_up04);
+
+        DtScalarVariable v_up05 = AddInputParameterReal("v_up05");
+        in.addParameter(v_up05);
+
         ComponentAPI inAPI = in.getAPI();
-        String pgm1 = "// DATA EXCHANGE PROGRAM - DO NOT EDIT THIS COMMENT\n";
-        pgm1 += "// parameter \"x\" as x\n";
-        pgm1 += "// parameter \"sample_Tmpl\" as sample_Tmpl\n";
-        pgm1 += "//END COMMENT\n";
-        pgm1 += "sample2 = new Partitioner(Tool.RANDOM, new FileExchanger(C_, sample_Tmpl, sample_Tmpl), null);\n";
-        pgm1 += "sample2.line(6).write(x);\n";
+        String pgm1 = "// DATA EXCHANGE PROGRAM - DO NOT EDIT THIS COMMENT\n" +
+                "//parameter \"v_down01\" as v_down01\n" +
+                "//parameter \"v_down02\" as v_down02\n" +
+                "//parameter \"v_down03\" as v_down03\n" +
+                "//parameter \"v_down04\" as v_down04\n" +
+                "//parameter \"v_down05\" as v_down05\n" +
+                "//parameter \"v_up01\" as v_up01\n" +
+                "//parameter \"v_up02\" as v_up02\n" +
+                "//parameter \"v_up03\" as v_up03\n" +
+                "//parameter \"v_up04\" as v_up04\n" +
+                "//parameter \"v_up05\" as v_up05\n" +
+                "//END COMMENT\n" +
+                "deform = new Partitioner(Tool.RANDOM, new FileExchanger(C_, Exchanger.PUT, \"deform.d_tmpl\", \"deform.d\"), null);\n" +
+                "deform.word(new LineLocator(1, new StringLocator(\"(下翼面)\", Locator.SOP)), 2).write(v_down01);\n" +
+                "deform.word(new LineLocator(3, new StringLocator(\"(下翼面)\", Locator.SOP)), 2).write(v_down02);\n" +
+                "deform.word(new LineLocator(5, new StringLocator(\"(下翼面)\", Locator.SOP)), 2).write(v_down03);\n" +
+                "deform.word(new LineLocator(7, new StringLocator(\"(下翼面)\", Locator.SOP)), 2).write(v_down04);\n" +
+                "deform.word(new LineLocator(9, new StringLocator(\"(下翼面)\", Locator.SOP)), 2).write(v_down05);\n" +
+                "deform.word(new LineLocator(1, new StringLocator(\"(上翼面)\", Locator.SOP)), 2).write(v_up01);\n" +
+                "deform.word(new LineLocator(3, new StringLocator(\"(上翼面)\", Locator.SOP)), 2).write(v_up02);\n" +
+                "deform.word(new LineLocator(5, new StringLocator(\"(上翼面)\", Locator.SOP)), 2).write(v_up03);\n" +
+                "deform.word(new LineLocator(7, new StringLocator(\"(上翼面)\", Locator.SOP)), 2).write(v_up04);\n" +
+                "deform.word(new LineLocator(9, new StringLocator(\"(上翼面)\", Locator.SOP)), 2).write(v_up05);\n";
         inAPI.set("program", pgm1);
         inAPI.apply();
 
+        DtScalarVariable Cd = AddOutputParameterReal("Cd");
+        out.addParameter(Cd);
+
+        DtScalarVariable Cl = AddOutputParameterReal("Cl");
+        out.addParameter(Cl);
+
+        DtUtils.copyParameters(out, calc);
+        ComponentAPI calculatorAPI = calc.getAPI();
+        String calcExp = "k=Cl/Cd";
+        calculatorAPI.set("expression", calcExp);
+        calculatorAPI.apply();
+
+        DtScalarVariable maxthick = AddOutputParameterReal("maxthick");
+        out.addParameter(maxthick);
+
+        DtScalarVariable beamthick = AddOutputParameterReal("beamthick");
+        out.addParameter(beamthick);
+
+        DtScalarVariable xc = AddOutputParameterReal("xc");
+        out.addParameter(xc);
+
+        //
+        DtUtils.copyParameters(in, myTask);
+        DtUtils.copyParameters(out, myTask);
+        DtUtils.copyParameters(calc, myTask);
+        OptimizationPlan optPlan = DesignDriverFactory.createOptPlan(myTask);
+        optPlan.setTechnique("com.engineous.plugin.optimization.Miga");
+        DesignVariable dv1 = optPlan.addDesignVariable("v_down01");
+        dv1.setBound(DesignVariable.LOWER_BOUND, -0.05);
+        dv1.setBound(DesignVariable.UPPER_BOUND, 0.05);
+        DesignVariable dv2 = optPlan.addDesignVariable("v_down02");
+        dv2.setBound(DesignVariable.LOWER_BOUND, -0.05);
+        dv2.setBound(DesignVariable.UPPER_BOUND, 0.05);
+        DesignVariable dv3 = optPlan.addDesignVariable("v_down03");
+        dv3.setBound(DesignVariable.LOWER_BOUND, -0.05);
+        dv3.setBound(DesignVariable.UPPER_BOUND, 0.05);
+        DesignVariable dv4 = optPlan.addDesignVariable("v_down04");
+        dv4.setBound(DesignVariable.LOWER_BOUND, -0.05);
+        dv4.setBound(DesignVariable.UPPER_BOUND, 0.05);
+        DesignVariable dv5 = optPlan.addDesignVariable("v_down05");
+        dv5.setBound(DesignVariable.LOWER_BOUND, -0.05);
+        dv5.setBound(DesignVariable.UPPER_BOUND, 0.05);
+
+        DesignVariable dv6 = optPlan.addDesignVariable("v_up01");
+        dv6.setBound(DesignVariable.LOWER_BOUND, -0.05);
+        dv6.setBound(DesignVariable.UPPER_BOUND, 0.05);
+        DesignVariable dv7 = optPlan.addDesignVariable("v_up02");
+        dv7.setBound(DesignVariable.LOWER_BOUND, -0.05);
+        dv7.setBound(DesignVariable.UPPER_BOUND, 0.05);
+        DesignVariable dv8 = optPlan.addDesignVariable("v_up03");
+        dv8.setBound(DesignVariable.LOWER_BOUND, -0.05);
+        dv8.setBound(DesignVariable.UPPER_BOUND, 0.05);
+        DesignVariable dv9 = optPlan.addDesignVariable("v_up04");
+        dv9.setBound(DesignVariable.LOWER_BOUND, -0.05);
+        dv9.setBound(DesignVariable.UPPER_BOUND, 0.05);
+        DesignVariable dv10 = optPlan.addDesignVariable("v_up05");
+        dv10.setBound(DesignVariable.LOWER_BOUND, -0.05);
+        dv10.setBound(DesignVariable.UPPER_BOUND, 0.05);
+
+        OutputConstraint con1 = optPlan.addConstraint("beamthick", OutputConstraint.ATTRIBUTE_LOWER_BOUND, 0.1);
+        OutputConstraint con2 = optPlan.addConstraint("beamthick", OutputConstraint.ATTRIBUTE_UPPER_BOUND, 0.11);
+        OutputConstraint con3 = optPlan.addConstraint("maxthick", OutputConstraint.ATTRIBUTE_LOWER_BOUND, 0.1);
+        OutputConstraint con4 = optPlan.addConstraint("maxthick", OutputConstraint.ATTRIBUTE_UPPER_BOUND, 0.15);
+        OutputConstraint con5 = optPlan.addConstraint("Cl", OutputConstraint.ATTRIBUTE_LOWER_BOUND, 1.15);
+        OutputConstraint con6 = optPlan.addConstraint("Cl", OutputConstraint.ATTRIBUTE_UPPER_BOUND, 1.4);
+
+        Objective obj = optPlan.addObjective("k", Objective.MINIMIZE);
+
+
+        optPlan.store(myTask);
+
         ComponentAPI outAPI = out.getAPI();
-        String pgm2 = "// DATA EXCHANGE PROGRAM - DO NOT EDIT THIS COMMENT\n";
-        pgm2 += "// parameter \"x\" as x\n";
-        pgm2 += "// parameter \"output_dat\" as output_dat\n";
-        pgm2 += "//END COMMENT\n";
-        pgm2 += "out = new Partitioner(Tool.RANDOM, new FileExchanger(C_, output_dat), null);\n";
-        pgm2 += "out.line(6).read(x);\n";
+        String pgm2 = "// DATA EXCHANGE PROGRAM - DO NOT EDIT THIS COMMENT\n" +
+                "//parameter \"beamthick\" as beamthick\n" +
+                "//parameter \"Cd\" as Cd\n" +
+                "//parameter \"Cl\" as Cl\n" +
+                "//parameter \"maxthick\" as maxthick\n" +
+                "//parameter \"xc\" as xc\n" +
+                "//END COMMENT\n" +
+                "\n" +
+                "afcharct = new Partitioner(Tool.RANDOM, new FileExchanger(C_,  Exchanger.GET, \"afcharct.dat\", null), null);\n" +
+                "afcharct.word(new LineLocator(0, new StringLocator(\"maxthick,xc\", Locator.SOP)), 3).read(maxthick);\n" +
+                "afcharct.word(new LineLocator(0, new StringLocator(\"maxthick,xc\", Locator.SOP)), 4).read(xc);\n" +
+                "afcharct.word(new LineLocator(0, new StringLocator(\"beamthick,xbeam\", Locator.SOP)), 3).read(beamthick);\n" +
+                "Cl2 = new Partitioner(Tool.RANDOM, new FileExchanger(C_,  Exchanger.GET,  \"Cl_polar.dat\", null), null);\n" +
+                "Cl2.word(new LineLocator(4, new StringLocator(\"alpha\", Locator.SOP)), 2).read(Cl);\n" +
+                "Cl2.word(new LineLocator(4, new StringLocator(\"alpha\", Locator.SOP)), 3).read(Cd);\n";
         outAPI.set("program", pgm2);
         outAPI.apply();
 
         //
         List<DtVariable> varToMap = new ArrayList<DtVariable>();
         varToMap.add(var);
+        varToMap.add(v_down01);
+        varToMap.add(v_down02);
+        varToMap.add(v_down03);
+        varToMap.add(v_down04);
+        varToMap.add(v_down05);
+        varToMap.add(v_up01);
+        varToMap.add(v_up02);
+        varToMap.add(v_up03);
+        varToMap.add(v_up04);
+        varToMap.add(v_up05);
+        varToMap.add(Cl);
+        varToMap.add(Cd);
+        varToMap.add(beamthick);
+        varToMap.add(maxthick);
         DtUtils.mapAddedParameterList(varToMap);
 
         //Save the model

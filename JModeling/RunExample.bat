@@ -21,7 +21,8 @@ exit 2
 set FiperLibList=.;%FiperJars%;lib\gui.jar;lib\dev-visual-util.jar;lib\dashboard.jar;lib\toolgui.jar;lib\frapi.jar;lib\vdd.jar;lib\mdolTranslator.jar;lib\correlationmap.jar
 
 rem --- Set up and launch
-set LaunchClasspath=%FiperJreLib%;%FiperLibList%;%EJBLib%;.;D:\Working\hy-addon\isight\application\hello\out\production\hello
+rem set LaunchClasspath=%FiperJreLib%;%FiperLibList%;%EJBLib%;.;%~dp0%\build
+set LaunchClasspath=%FiperJreLib%;%FiperLibList%;%EJBLib%;.;%~dp0%\out\production\JModeling
 REM set LaunchPgm=%1
 set LaunchPgm=org.huys.isight.MainProgram
 SHIFT
