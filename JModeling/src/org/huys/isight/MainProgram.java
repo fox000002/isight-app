@@ -6,9 +6,16 @@ public class MainProgram {
 
         String[] params = {"mycase.zmf"};
 
+        //
+        System.out.println("Creating Isight Model");
+        Modelling.run(params);
+
+        //System.out.println("Executing Isight Model");
         //ModelExecution.run(params);
 
-        Modelling.run(params);
+        //
+        ModellingExample.createModelWithCalc();
+        ModellingExample.createModelWithScript();
     }
 
 }
