@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import com.engineous.sdk.component.ComponentAPI;
+import com.engineous.sdk.component.PluginAPI;
 import com.engineous.sdk.designdriver.DesignDriverFactory;
 import com.engineous.sdk.designdriver.parameters.DesignVariable;
 import com.engineous.sdk.designdriver.parameters.Objective;
@@ -18,9 +19,7 @@ import com.engineous.sdk.metamodel.MetaModel;
 import com.engineous.sdk.metamodel.MetaModelManager;
 import com.engineous.sdk.model.*;
 import com.engineous.sdk.server.Logon;
-import com.engineous.sdk.vars.EsiTypes;
-import com.engineous.sdk.vars.Value;
-import com.engineous.sdk.vars.Variable;
+import com.engineous.sdk.vars.*;
 
 /**
  * Example to show programmatically develop and configure a model
@@ -45,12 +44,14 @@ public class Modelling {
 //            loadModelFromFile();
 
             //Example of how to create a model from scratch
-            //createModelFromScratch();
+            System.out.println("calling createModelFromScratch");
+            createModelFromScratch();
 
             listComponents();
 
-            createMySimOptModelFromScratch();
+            createMySimCodeOptModelFromScratch();
 
+            createMyWingDOptModelFromScratch();
 
         } catch (Exception e) {
             SysLog.log(Log.ERROR, e, "Exception caught in main...");
@@ -297,16 +298,16 @@ public class Modelling {
                 "//parameter \"v_up05\" as v_up05\n" +
                 "//END COMMENT\n" +
                 "deform = new Partitioner(Tool.RANDOM, new FileExchanger(C_, Exchanger.PUT, \"deform.d_tmpl\", \"deform.d\"), null);\n" +
-                "deform.word(new LineLocator(1, new StringLocator(\"(下翼面)\", Locator.SOP)), 2).write(v_down01);\n" +
-                "deform.word(new LineLocator(3, new StringLocator(\"(下翼面)\", Locator.SOP)), 2).write(v_down02);\n" +
-                "deform.word(new LineLocator(5, new StringLocator(\"(下翼面)\", Locator.SOP)), 2).write(v_down03);\n" +
-                "deform.word(new LineLocator(7, new StringLocator(\"(下翼面)\", Locator.SOP)), 2).write(v_down04);\n" +
-                "deform.word(new LineLocator(9, new StringLocator(\"(下翼面)\", Locator.SOP)), 2).write(v_down05);\n" +
-                "deform.word(new LineLocator(1, new StringLocator(\"(上翼面)\", Locator.SOP)), 2).write(v_up01);\n" +
-                "deform.word(new LineLocator(3, new StringLocator(\"(上翼面)\", Locator.SOP)), 2).write(v_up02);\n" +
-                "deform.word(new LineLocator(5, new StringLocator(\"(上翼面)\", Locator.SOP)), 2).write(v_up03);\n" +
-                "deform.word(new LineLocator(7, new StringLocator(\"(上翼面)\", Locator.SOP)), 2).write(v_up04);\n" +
-                "deform.word(new LineLocator(9, new StringLocator(\"(上翼面)\", Locator.SOP)), 2).write(v_up05);\n";
+                "deform.word(new LineLocator(1, new StringLocator(\"(涓嬬考闈¢)\", Locator.SOP)), 2).write(v_down01);\n" +
+                "deform.word(new LineLocator(3, new StringLocator(\"(涓嬬考闈¢)\", Locator.SOP)), 2).write(v_down02);\n" +
+                "deform.word(new LineLocator(5, new StringLocator(\"(涓嬬考闈¢)\", Locator.SOP)), 2).write(v_down03);\n" +
+                "deform.word(new LineLocator(7, new StringLocator(\"(涓嬬考闈¢)\", Locator.SOP)), 2).write(v_down04);\n" +
+                "deform.word(new LineLocator(9, new StringLocator(\"(涓嬬考闈¢)\", Locator.SOP)), 2).write(v_down05);\n" +
+                "deform.word(new LineLocator(1, new StringLocator(\"(涓婄考闈¢)\", Locator.SOP)), 2).write(v_up01);\n" +
+                "deform.word(new LineLocator(3, new StringLocator(\"(涓婄考闈¢)\", Locator.SOP)), 2).write(v_up02);\n" +
+                "deform.word(new LineLocator(5, new StringLocator(\"(涓婄考闈¢)\", Locator.SOP)), 2).write(v_up03);\n" +
+                "deform.word(new LineLocator(7, new StringLocator(\"(涓婄考闈¢)\", Locator.SOP)), 2).write(v_up04);\n" +
+                "deform.word(new LineLocator(9, new StringLocator(\"(涓婄考闈¢)\", Locator.SOP)), 2).write(v_up05);\n";
         inAPI.set("program", pgm1);
         inAPI.apply();
 
@@ -430,6 +431,147 @@ public class Modelling {
     //=========================================================================
 
     /**
+     * Method createMySimOptModelFromScratch
+     *
+     * @throws Exception
+     */
+    //=========================================================================
+    private static void createMySimCodeOptModelFromScratch()
+            throws Exception {
+        DtModelManager mgr = DtModelManager.createEmptyModel();
+        mgr.getModelProperties().setModelName("My SimOpt Model");
+
+        //
+        MetaModel rootMM = MetaModelManager.instance().lookupMetaModel(EsiTypes.OPTIMIZATION_COMPONENT);
+        DtComponent myTask = DtModelManager.createComponent(rootMM, "MySimcodeOptimization");
+        mgr.setRootComponent(myTask);
+
+        MetaModel simcode = MetaModelManager.instance().lookupMetaModel("com.engineous.component.Simcode");
+        DtComponent code = DtModelManager.createComponent(simcode, "My Simcode");
+        myTask.addComponent(code);
+
+        // Now add a calculator to the task
+        MetaModel calcMM = MetaModelManager.instance().lookupMetaModel("com.engineous.component.Calculator");
+        DtComponent calc = DtModelManager.createComponent(calcMM, "My Calc");
+        myTask.addComponent(calc);
+
+        //
+        DtControlFlow cf1 = DtModelManager.createControlFlow(null, code);
+        DtControlFlow cf2 = DtModelManager.createControlFlow(code, calc);
+        DtControlFlow cf3 = DtModelManager.createControlFlow(calc, null);
+
+        myTask.addControlFlow(cf1);
+        myTask.addControlFlow(cf2);
+        myTask.addControlFlow(cf3);
+
+        //
+        ComponentAPI simcodeAPI = code.getAPI();
+        PluginAPI localPluginAPI = (PluginAPI)simcodeAPI.get("oscommandapi");
+        localPluginAPI.set("command", "ackley.exe");
+        localPluginAPI.apply();
+
+        //
+        DtScalarVariable v_down01 = AddInputParameterReal("v_down01");
+        code.addParameter(v_down01);
+
+        DtScalarVariable v_down02 = AddInputParameterReal("v_down02");
+        code.addParameter(v_down02);
+
+        DtScalarVariable v_down03 = AddInputParameterReal("v_down03");
+        code.addParameter(v_down03);
+
+        DtScalarVariable v_down04 = AddInputParameterReal("v_down04");
+        code.addParameter(v_down04);
+
+        DtScalarVariable v_down05 = AddInputParameterReal("v_down05");
+        code.addParameter(v_down05);
+
+        DtScalarVariable v_up01 = AddInputParameterReal("v_up01");
+        code.addParameter(v_up01);
+
+        DtScalarVariable v_up02 = AddInputParameterReal("v_up02");
+        code.addParameter(v_up02);
+
+        DtScalarVariable v_up03 = AddInputParameterReal("v_up03");
+        code.addParameter(v_up03);
+
+        DtScalarVariable v_up04 = AddInputParameterReal("v_up04");
+        code.addParameter(v_up04);
+
+        DtScalarVariable v_up05 = AddInputParameterReal("v_up05");
+        code.addParameter(v_up05);
+
+        DtScalarVariable localDtScalarVariable3 = DtModelManager.createScalarVariable("AeroIn_txt", "com.engineous.datatype.File", 1, 1, null, null);
+
+        FileValueType localFileValueType = (FileValueType)localDtScalarVariable3.getValueObj();
+        localFileValueType.setHandlerType("com.engineous.plugin.DataHandlerFile");
+        localFileValueType.getHandler().setResourceName("c:\\tmp\\AeroIn.txt");
+        localFileValueType.setToOption(5);
+        code.addParameter(localDtScalarVariable3);
+
+        DtPlugin localDtPlugin = (DtPlugin)simcodeAPI.get("inputdataexchange");
+        String pgm1 = "// DATA EXCHANGE PROGRAM - DO NOT EDIT THIS COMMENT\n" +
+                "//parameter \"v_down01\" as v_down01\n" +
+                "//parameter \"v_down02\" as v_down02\n" +
+                "//parameter \"v_down03\" as v_down03\n" +
+                "//parameter \"v_down04\" as v_down04\n" +
+                "//parameter \"v_down05\" as v_down05\n" +
+                "//parameter \"v_up01\" as v_up01\n" +
+                "//parameter \"v_up02\" as v_up02\n" +
+                "//parameter \"v_up03\" as v_up03\n" +
+                "//parameter \"v_up04\" as v_up04\n" +
+                "//parameter \"v_up05\" as v_up05\n" +
+                "//END COMMENT\n" +
+                "deform = new Partitioner(Tool.RANDOM, new FileExchanger(C_, Exchanger.PUT, \"deform.d_tmpl\", \"deform.d\"), null);\n" +
+                "deform.word(new LineLocator(1, new StringLocator(\"(涓嬬考闈¢)\", Locator.SOP)), 2).write(v_down01);\n" +
+                "deform.word(new LineLocator(3, new StringLocator(\"(涓嬬考闈¢)\", Locator.SOP)), 2).write(v_down02);\n" +
+                "deform.word(new LineLocator(5, new StringLocator(\"(涓嬬考闈¢)\", Locator.SOP)), 2).write(v_down03);\n" +
+                "deform.word(new LineLocator(7, new StringLocator(\"(涓嬬考闈¢)\", Locator.SOP)), 2).write(v_down04);\n" +
+                "deform.word(new LineLocator(9, new StringLocator(\"(涓嬬考闈¢)\", Locator.SOP)), 2).write(v_down05);\n" +
+                "deform.word(new LineLocator(1, new StringLocator(\"(涓婄考闈¢)\", Locator.SOP)), 2).write(v_up01);\n" +
+                "deform.word(new LineLocator(3, new StringLocator(\"(涓婄考闈¢)\", Locator.SOP)), 2).write(v_up02);\n" +
+                "deform.word(new LineLocator(5, new StringLocator(\"(涓婄考闈¢)\", Locator.SOP)), 2).write(v_up03);\n" +
+                "deform.word(new LineLocator(7, new StringLocator(\"(涓婄考闈¢)\", Locator.SOP)), 2).write(v_up04);\n" +
+                "deform.word(new LineLocator(9, new StringLocator(\"(涓婄考闈¢)\", Locator.SOP)), 2).write(v_up05);\n";
+        ((ScalarVariable)localDtPlugin.getProperty("program")).getValueObj().setValue(pgm1);
+
+
+        DtPlugin localDtPluginOut = (DtPlugin)simcodeAPI.get("outputdataexchange");
+        String pgm2 = "// DATA EXCHANGE PROGRAM - DO NOT EDIT THIS COMMENT\n" +
+                "//parameter \"beamthick\" as beamthick\n" +
+                "//parameter \"Cd\" as Cd\n" +
+                "//parameter \"Cl\" as Cl\n" +
+                "//parameter \"maxthick\" as maxthick\n" +
+                "//parameter \"xc\" as xc\n" +
+                "//END COMMENT\n" +
+                "\n" +
+                "afcharct = new Partitioner(Tool.RANDOM, new FileExchanger(C_,  Exchanger.GET, \"afcharct.dat\", null), null);\n" +
+                "afcharct.word(new LineLocator(0, new StringLocator(\"maxthick,xc\", Locator.SOP)), 3).read(maxthick);\n" +
+                "afcharct.word(new LineLocator(0, new StringLocator(\"maxthick,xc\", Locator.SOP)), 4).read(xc);\n" +
+                "afcharct.word(new LineLocator(0, new StringLocator(\"beamthick,xbeam\", Locator.SOP)), 3).read(beamthick);\n" +
+                "Cl2 = new Partitioner(Tool.RANDOM, new FileExchanger(C_,  Exchanger.GET,  \"Cl_polar.dat\", null), null);\n" +
+                "Cl2.word(new LineLocator(4, new StringLocator(\"alpha\", Locator.SOP)), 2).read(Cl);\n" +
+                "Cl2.word(new LineLocator(4, new StringLocator(\"alpha\", Locator.SOP)), 3).read(Cd);\n";
+        ((ScalarVariable)localDtPluginOut.getProperty("program")).getValueObj().setValue(pgm2);
+
+        simcodeAPI.apply();
+
+        ComponentAPI calculatorAPI = calc.getAPI();
+        String calcExp = "k=Cl/Cd";
+        calculatorAPI.set("expression", calcExp);
+        calculatorAPI.apply();
+
+        //Save the model
+        // To verify what you have created, go load this into the Isight Gateway.
+
+        String newName = "MySimCodeOptModel.zmf";
+        OutputStream savedFile = new FileOutputStream(newName);
+        mgr.saveZippedModel(savedFile);
+    }
+
+    //=========================================================================
+
+    /**
      * Method createMyOptModelFromScratch
      *
      * @throws Exception
@@ -496,6 +638,93 @@ public class Modelling {
         mgr.saveZippedModel(savedFile);
     }
 
+    private static DtComponent createSimcodeComponent(String name) throws Exception
+    {
+        MetaModel simcode = MetaModelManager.instance().lookupMetaModel("com.engineous.component.Simcode");
+        DtComponent code = DtModelManager.createComponent(simcode, name);
+
+        return code;
+    }
+
+    private static void setSimcodeCommand(DtComponent code, String cmd, String args) throws Exception
+    {
+        //
+        ComponentAPI simcodeAPI = code.getAPI();
+        PluginAPI localPluginAPI = (PluginAPI)simcodeAPI.get("oscommandapi");
+        localPluginAPI.set("command", cmd + " " + args);
+        localPluginAPI.apply();
+    }
+
+    //=========================================================================
+
+    /**
+     * Method createMyOptModelFromScratch
+     *
+     * @throws Exception
+     */
+    //=========================================================================
+    private static void createMyWingDOptModelFromScratch()
+            throws Exception {
+        DtModelManager mgr = DtModelManager.createEmptyModel();
+        mgr.getModelProperties().setModelName("My WingD Optimization Model");
+
+        //
+        MetaModel rootMM = MetaModelManager.instance().lookupMetaModel(EsiTypes.OPTIMIZATION_COMPONENT);
+        DtComponent myTask = DtModelManager.createComponent(rootMM, "MyOptimization");
+        mgr.setRootComponent(myTask);
+
+        // Now add a simcode to the task
+        DtComponent sm = createSimcodeComponent("blwf");
+        myTask.addComponent(sm);
+
+        //
+        DtControlFlow cf1 = DtModelManager.createControlFlow(null, sm);
+        DtControlFlow cf2 = DtModelManager.createControlFlow(sm, null);
+
+        myTask.addControlFlow(cf1);
+        myTask.addControlFlow(cf2);
+
+        //
+        DtScalarVariable var = DtModelManager.createScalarVariable("x", EsiTypes.REAL, Variable.ROLE_PARAMETER,
+                Variable.MODE_INPUT, null, null);
+
+        var.getValueObj().setValue(100);
+        sm.addParameter(var);
+
+        DtUtils.copyParameters(sm, myTask);
+
+        DtScalarVariable var2 = DtModelManager.createScalarVariable("y", EsiTypes.REAL, Variable.ROLE_PARAMETER,
+                Variable.MODE_OUTPUT, null, null);
+
+        sm.addParameter(var2);
+
+        //
+        OptimizationPlan optPlan = DesignDriverFactory.createOptPlan(myTask);
+        DesignVariable dv = optPlan.addDesignVariable("x");
+        Objective obj = optPlan.addObjective("y", Objective.MINIMIZE);
+        optPlan.store(myTask);
+
+        //
+        setSimcodeCommand(sm, "E:\\20130821\\WingOpti20130826\\bin\\ComPar.exe",
+                "E:\\20130821\\WingOpti20130826\\project1001\\WF.inp");
+
+        ComponentAPI simcodeAPI = sm.getAPI();
+        DtPlugin localDtPlugin = (DtPlugin)simcodeAPI.get("inputdataexchange");
+        DtPlugin localDtPluginOut = (DtPlugin)simcodeAPI.get("outputdataexchange");
+
+
+        //
+        List<DtVariable> varToMap = new ArrayList<DtVariable>();
+        varToMap.add(var);
+        DtUtils.mapAddedParameterList(varToMap);
+
+        //Save the model
+        // To verify what you have created, go load this into the Isight Gateway.
+
+        String newName = "MyWingDOptModel.zmf";
+        OutputStream savedFile = new FileOutputStream(newName);
+        mgr.saveZippedModel(savedFile);
+    }
 
     //=========================================================================
 

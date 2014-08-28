@@ -162,7 +162,7 @@ public class ModelExecution {
                 var.addVariableChangeListener(varChangeListener);
                 v.addValueChangeListener(valChangeListener);
 
-                v.setValue(200.0);
+                //v.setValue(200.0);
 
             } catch (DtModelException e) {
                 e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
@@ -198,7 +198,7 @@ public class ModelExecution {
                         try {
                             DtComponent rootComponent = mgr.getRootComponent();
 
-                            RtUtils.writeResults(new DtComponentPath(rootComponent), jobId, new File("test." + idx), false, "\n");
+                           // RtUtils.writeResults(new DtComponentPath(rootComponent), jobId, new File("test." + idx), false, "\n");
 
                             idx++;
 
@@ -280,22 +280,22 @@ public class ModelExecution {
 
                                 if (null != resultSet) {
                                     FiperResultSetMetaData resultMetaData = (FiperResultSetMetaData) resultSet.getMetaData();
-                                    System.out.println("FiperResultSet");
+                                    //System.out.println("FiperResultSet");
 //
                                     int numRows = resultSet.getNumRows();
-                                    System.out.println("Result Rows : " + numRows);
+                                    //System.out.println("Result Rows : " + numRows);
 
                                     System.out.println("----------------------------------------------------");
                                     int numColumns = resultMetaData.getColumnCount();
                                     // Now print a line for each row of results in the result set
                                     for (int i = 1; i <= numColumns; i++) {        // Print column headers
-                                        System.out.println(resultMetaData.getColumnName(i));
+                                        //System.out.println(resultMetaData.getColumnName(i));
                                     }
                                     if (resultSet.next()) {
                                         for (int i = 1; i <= numColumns; i++) {    // remember columns are 1-based in SQL
                                             Value val2 = (Value) resultSet.getObject(i);
                                             if (val2 != null) {
-                                                System.out.println(resultMetaData.getColumnName(i) + " : " + val2.getAsString());
+                                                //System.out.println(resultMetaData.getColumnName(i) + " : " + val2.getAsString());
                                             }
                                         }
                                     }
@@ -305,12 +305,12 @@ public class ModelExecution {
 
                                     if (null != runresultdata) {
                                         int nr = runresultdata.getNumRows();
-                                        System.out.println("RunResultData : " + nr);
-                                        Variable x = rootComponent.getParameter("x1");
-                                        Value[] vals = runresultdata.getValueList(x, Variable.MODE_INOUT);
+                                        //System.out.println("RunResultData : " + nr);
+                                        Variable y = rootComponent.getParameter("y");
+                                        Value[] vals = runresultdata.getValueList(y, Variable.MODE_OUTPUT);
                                         if (null != vals) {
                                         for (Value v : vals) {
-                                            System.out.println("x1 : " + v.getAsReal());
+                                            System.out.println("y : " + v.getAsReal());
                                        }
                                         }
                                     }
@@ -358,8 +358,6 @@ public class ModelExecution {
                         } catch (RtException e) {
                             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
                         } catch (PSEException e) {
-                            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-                        } catch (SDKException e) {
                             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
                         }
 

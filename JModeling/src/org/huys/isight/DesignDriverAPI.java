@@ -30,7 +30,7 @@ import com.engineous.sdk.vars.VariableException;
 
 
 /**
- * Example to show programmitically configuring an optimization and DOE component
+ * Example to show configuring an optimization and DOE component
  * within an existing template model
  */
 public class DesignDriverAPI {
